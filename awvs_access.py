@@ -34,6 +34,7 @@ for row in cursor.execute(SQL):
 for i in domain_url.keys():
     sql='SELECT WVS_alerts.scid, WVS_alerts.severity, WVS_alerts.alertpath, WVS_alerts.request, WVS_alerts.details FROM WVS_alerts  where wvs_alerts.scid=%s order by severity'%(domain_url[i])
     #print sql
+    #print sql
     for row in cursor.execute(sql):
         #print row
         #file(r'c:/testxxxxx.txt','a').write(row['request'])
