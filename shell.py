@@ -24,6 +24,7 @@ def functions():
     print "\033[;31m**********************************************************"
     print "\033[;31mmail:1289675768@qq.com author:net2\033[1;m"
     print "\033[;31mls    [dir]             列目录\033[1;m"
+    print "\033[;31mcd    [webroot]         进入[根]目录\033[1;m"
     print "\033[;31mcat   [file]            查看文件\033[1;m"
     print "\033[;31mup    [local] [remote]  上传 \033[1;m"
     print "\033[;31mdown  [remote] [local]  下载\033[1;m"
@@ -519,7 +520,7 @@ def delfile(filename):
         print "error!"
 
 def cmd(cmdbash="cmd.exe",command=""):
-    print 'cmdbash:',cmdbash
+    #print 'cmdbash:',cmdbash
     global session_webroot  
     global session_cmd
     global session_user
@@ -569,8 +570,15 @@ def changdir(dir):
     #print 'dir',dir
     if dir=='..\\' or dir=='..' or dir=='dir ../':
         num=session_dir.rfind('/')
-	session_dir=session_dir[0:num]
-    
+	if num==-1:
+	    session_dir=session_dir
+	else:
+	    session_dir=session_dir[0:num]
+            if session_dir=='':
+	        session_dir='/'
+    elif dir=='.' or dir=='./' or dir=='.\\':
+        session_dir=session_dir
+
     elif dir[0:1] in string.ascii_letters and dir[1:2]==':' or dir[0:1]=='/':
         session_dir=dir
     else:
