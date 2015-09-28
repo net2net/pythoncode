@@ -4,7 +4,7 @@ import sys
 reload(sys)
 sys.setdefaultencoding("utf-8")
 import re
-import commands
+import urlparse
 try:
     from bs4 import BeautifulSoup
     import requests
@@ -19,6 +19,7 @@ except ImportError, e:
 subdomains = list()
 subdomainsurl=list()
 turl=list()
+maindomain=''
 """
     start of search engines 
 """
@@ -30,8 +31,7 @@ ixquicksearchengine = 'https://ixquick.com/do/search'
 yandexsearchengine = 'http://www.yandex.com/yandsearch'
 
 def getgoogleresults(maindomain,searchparams):
-    #regexword = r'(http://|https://){0,1}(.*)' + maindomain.replace('.','\.')
-    regexword = r'(http://|https://){0,1}(.*?)' + maindomain.replace('.','\.')+r'(:\d{1,5}/)*'
+    regexword = r'(http://|https://){0,1}(.*?)' + maindomain.replace('.','\.')+r'(:?\d{0,5}/?)?'
     print "google searching----%s"%(maindomain)
     try:
         content = requests.get(googlesearchengine,params=searchparams).content
@@ -58,11 +58,14 @@ def getgoogleresults(maindomain,searchparams):
 	        subdomainsurl.append(s3)
             if res not in subdomains:
                 subdomains.append(res)
+    print subdomains
+    print subdomainsurl
+    print '###############################################################'
 
 def getbingresults(maindomain,searchparams):
-    #regexword = r'(http://|https://){0,1}(.*)' + maindomain.replace('.','\.')
     print "bing searching----%s"%(maindomain)
-    regexword = r'(http://|https://){0,1}(.*?)' + maindomain.replace('.','\.')+r'(:\d{1,5}\/)*'
+    #regexword = r'(http://|https://){0,1}(.*?)' + maindomain.replace('.','\.')+r'(:\d{1,5}\/)*'
+    regexword = r'(http://|https://){0,1}(.*?)' + maindomain.replace('.','\.')+r'(:?\d{0,5}/?)?'
     try:
         content = requests.get(bingsearchengine,params=searchparams).content
     except:
@@ -83,12 +86,15 @@ def getbingresults(maindomain,searchparams):
 	        subdomainsurl.append(s3)
             if res not in subdomains:
                 subdomains.append(res)
+    print subdomains
+    print subdomainsurl
+    print '###############################################################'
 
 
 def getbaiduresults(maindomain,searchparams):
    # regexword = r'(http://|https://){0,1}(.*)' + maindomain.replace('.','\.')
     print "baidu searching----%s"%(maindomain)
-    regexword = r'(http://|https://){0,1}(.*?)' + maindomain.replace('.','\.')+r'(:\d{1,5}\/)*'
+    regexword = r'(http://|https://){0,1}(.*?)' + maindomain.replace('.','\.')+r'(:?\d{0,5}/?)?'
     try:
         content = requests.get(baidusearchengine,params=searchparams).content
     except:
@@ -109,11 +115,13 @@ def getbaiduresults(maindomain,searchparams):
 	        subdomainsurl.append(s3)
             if res not in subdomains:
                 subdomains.append(res)
+    print subdomains
+    print subdomainsurl
+    print '###############################################################'
 
 
 def getixquickresults(maindomain,searchparams):
-   # regexword = r'(http://|https://){0,1}(.*)' + maindomain.replace('.','\.')
-    regexword = r'(http://|https://){0,1}(.*?)' + maindomain.replace('.','\.')+r'(:\d{1,5}\/)*'
+    regexword = r'(http://|https://){0,1}(.*?)' + maindomain.replace('.','\.')+r'(:?\d{0,5}/?)?'
     print "ixquick searching----%s"%(maindomain)
     try:
         content = requests.post(ixquicksearchengine,data=searchparams).content
@@ -135,12 +143,14 @@ def getixquickresults(maindomain,searchparams):
 	        subdomainsurl.append(s3)
             if res not in subdomains:
                 subdomains.append(res)
+    print subdomains
+    print subdomainsurl
+    print '###############################################################'
 
 
 def getyandexresults(maindomain,searchparams):
-   # regexword = r'(http://|https://){0,1}(.*)' + maindomain.replace('.','\.')
     print "yandex searching----%s"%(maindomain)
-    regexword = r'(http://|https://){0,1}(.*?)' + maindomain.replace('.','\.')+r'(:\d{1,5}\/)*'
+    regexword = r'(http://|https://){0,1}(.*?)' + maindomain.replace('.','\.')+r'(:?\d{0,5}/?)?'
     try:
         content = requests.get(yandexsearchengine,params=searchparams).content
     except:
@@ -161,6 +171,9 @@ def getyandexresults(maindomain,searchparams):
 	        subdomainsurl.append(s3)
             if res not in subdomains:
                 subdomains.append(res)
+    print subdomains
+    print subdomainsurl
+    print '###############################################################'
 
 """
     end of the search engines
@@ -192,7 +205,7 @@ def getdomaincontent(domain,baddomain=None,params=None,headers=None):
     #content=rc.content
     soup=BeautifulSoup(content)
     links=soup.find_all('a')
-    regexword=r'(http://|https://){0,1}(.*?)'+maindomain.replace('.','\.')+r'(:?\d{0,5}/)?'
+    regexword=r'(http://|https://){0,1}(.*?)'+maindomain.replace('.','\.')+r'(:?\d{0,5}/?)?'
     pattern=re.compile(regexword)
 
     for i in links:
@@ -201,11 +214,16 @@ def getdomaincontent(domain,baddomain=None,params=None,headers=None):
             #print 'b-----------------------',b
             #print 'baddomain----------',baddomain
             match=pattern.match(b)
-            bad_true=b.find(str(baddomain))
-            if match is not None and bad_true==-1:
+            bad_domain_position=b.find(str(baddomain))
+	    #print '########',bad_domain_position
+            if match is not None and bad_domain_position==-1:
                 res = match.group(2).strip() + maindomain
-                tempurl=match.group().strip()
-                if tempurl not in subdomainsurl:
+		netloc=urlparse.urlparse(res)[1]
+                if res not in subdomains and netloc.find(maindomain)!=-1:
+                    subdomains.append(res)
+                tempurl=match.group().strip().rstrip('/')+'/'
+		netloc=urlparse.urlparse(tempurl)[1]
+                if tempurl not in subdomainsurl and netloc.find(maindomain)!=-1:
                     subdomainsurl.append(tempurl)
                     if len(subdomainsurl)%50==0:
 		        print "write temp result....."
@@ -215,8 +233,9 @@ def getdomaincontent(domain,baddomain=None,params=None,headers=None):
 	                fobj=file(r'./temp_domainsurl.txt','w')
 	                fobj.write('\n'.join(subdomainsurl))
 	                fobj.close()
-                if res not in subdomains:
-                    subdomains.append(res)
+    print subdomains
+    print subdomainsurl
+    print '###############################################################'
 
 if __name__ == "__main__":
     if len(sys.argv)==1:
@@ -282,7 +301,7 @@ if __name__ == "__main__":
   #  for i in subdomainsurl:
 #	print i
 
-    getdomaincontent('www'+maindomain)
+    getdomaincontent('http://www'+maindomain)
     fobj=file(r'subdomains.txt','w')
     fobj.write('\n'.join(subdomains))
     fobj.close()
