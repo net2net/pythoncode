@@ -9,6 +9,7 @@ tgtPorts='21,22,23,25,42,53,69,79,80,81,88110,135,137,161,179,379,389,443,445,46
 tgtHosts=[]
 threadlist=[]
 def connScan(tgtHost, tgtPort):
+    
     try:
         connSkt=socket(AF_INET, SOCK_STREAM)
         connSkt.settimeout(0.3)
@@ -28,15 +29,9 @@ def portScan(tgtHost):
     except:
         print(" Cannot resolve '%s': Unknown host"%tgtHost)
         return
-    try:
-        tgtName=gethostbyaddr(tgtIP)
-        print('Scaning : %s' %tgtName)
-    except:
-        print('Scaning: %s' %tgtIP)
     tgtPortsList=tgtPorts.split(',')
     for port in tgtPortsList:
-        #print('Scanning port %s'%port)
-        connScan(tgtHost, int(port))
+        connScan(tgtIP, int(port))
 def main():
     global threadlist
     tgtNet=tgtHost[0:tgtHost.rfind('.')]
@@ -44,6 +39,7 @@ def main():
     for x in range(int(ipnum[0]),int(ipnum[1])+1):
         tgtHosts.append(tgtNet+'.'+str(x))
     for i in tgtHosts:
+        print 'scaning %s.... '%(i)
         t=threading.Thread(target=portScan,args=(i,))
 	t.start()
 	threadlist.append(t)
