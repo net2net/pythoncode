@@ -51,7 +51,6 @@ def main():
         x.join()
 def usage():
     print '[options]'
-    print 'powered by net2 ^_^ 1289675768@qq.com '
     print 'usage:'
     print '\t portscan.py 192.168.1.1-254'
 
